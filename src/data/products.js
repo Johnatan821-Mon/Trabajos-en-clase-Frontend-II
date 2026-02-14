@@ -12,7 +12,7 @@ export const products = [
     name: 'Smartphone Samsung Galaxy S21',
     category: 'Smartphones',
     price: 3500000,
-    image: 'src/assets/smartphone.png',
+    image: 'src/assets/smarphone.png',
     description: 'Smartphone Samsung Galaxy S21 con pantalla AMOLED de 6.2 pulgadas, procesador Exynos 2100 y cámara de 64MP.'
     },
   {
@@ -28,7 +28,7 @@ export const products = [
     name: 'Smartwatch Apple Watch Series 6',
     category: 'Wearables',
     price: 2500000,
-    image: 'src/assets/smartwatch.jpg',
+    image: 'src/assets/smarwaches.jpg',
     description: 'Smartwatch Apple Watch Series 6 con monitor de oxígeno en sangre, GPS y resistencia al agua.'
     },
 
