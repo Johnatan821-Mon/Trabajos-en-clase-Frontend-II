@@ -1,5 +1,5 @@
 .productCard {
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -33,7 +33,7 @@
 .productCategory {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6366f1;
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -41,13 +41,13 @@
 .productName {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text);
   margin: 0;
 }
 
 .productDescription {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--text-muted);
   line-height: 1.5;
   flex: 1;
 }
@@ -58,17 +58,17 @@
   align-items: center;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
 }
 
 .productPrice {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #059669;
+  color: var(--success);
 }
 
 .btnLike {
-  background: #f3f4f6;
+  background: var(--gray-100);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -79,7 +79,7 @@
 }
 
 .btnLike:hover {
-  background: #e5e7eb;
+  background: var(--gray-200);
 }
 
 .btnLike:active {
@@ -87,10 +87,10 @@
 }
 
 .btnLike.liked {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .btnLike.liked:hover {
-  background: #fecaca;
+  background: var(--danger-soft-hover);
 }
