@@ -115,3 +115,13 @@
   font-weight: 800;
   cursor: pointer;
 }
+.btnEdit {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+}
