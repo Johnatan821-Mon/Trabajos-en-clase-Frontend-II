@@ -10,7 +10,6 @@ const emptyValues = {
   image: "",
   description: "",
 };
-h
 function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
   const [values, setValues] = useState(emptyValues);
 

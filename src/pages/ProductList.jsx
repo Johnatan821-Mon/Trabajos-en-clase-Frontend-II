@@ -14,7 +14,6 @@ const handleAddProduct = (product) => {
 
     return [...prev, { ...product, id: nextId }];
   });
- 
 };
 
   return (
