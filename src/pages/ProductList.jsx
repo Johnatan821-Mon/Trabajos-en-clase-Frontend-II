@@ -15,6 +15,9 @@ const handleAddProduct = (product) => {
     return [...prev, { ...product, id: nextId }];
   });
 };
+const handleDeleteProduct = (id) => {
+  setProductsState((prev) => prev.filter((product) => product.id !== id));
+};
 
   return (
     <div className={styles.container}>
@@ -35,6 +38,7 @@ const handleAddProduct = (product) => {
             stock={product.stock}
             image={product.image}
             description={product.description}
+            onDelete={() => handleDeleteProduct(product.id)}
           />
         ))}
       </div>

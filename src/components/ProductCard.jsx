@@ -1,6 +1,6 @@
 import {useState} from "react";
 import styles from "./ProductCard.module.css";
-function ProductCard({ name, category, price, stock, image, description }) {
+function ProductCard({ name, category, price, stock, image, description, onDelete }) {
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
 
@@ -32,6 +32,13 @@ function ProductCard({ name, category, price, stock, image, description }) {
           </button>
         </div>
       </div>
+      {onDelete ? (
+        <div className={styles.cardActions}>
+          <button type="button" className={styles.btnDelete} onClick={onDelete}>
+            Eliminar
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }
