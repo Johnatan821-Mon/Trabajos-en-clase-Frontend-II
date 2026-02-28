@@ -14,6 +14,7 @@ const handleAddProduct = (product) => {
 
     return [...prev, { ...product, id: nextId }];
   });
+  handleCloseForm();
 };
 const handleDeleteProduct = (id) => {
   setProductsState((prev) => prev.filter((product) => product.id !== id));
@@ -23,6 +24,7 @@ const [editingProduct, setEditingProduct] = useState(null);
 
 const handleEditStart = (product) => {
   setEditingProduct(product);
+  setIsFormOpen(true);
 };
 
 const handleEditCancel = () => {
@@ -37,8 +39,18 @@ const handleEditSubmit = (updatedProduct) => {
   );
 
   setEditingProduct(null);
+  handleCloseForm();
+};
+const [isFormOpen, setIsFormOpen] = useState(false);
+const handleOpenCreate = () => {
+  setEditingProduct(null);
+  setIsFormOpen(true);
 };
 
+const handleCloseForm = () => {
+  setEditingProduct(null);
+  setIsFormOpen(false);
+};
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -47,27 +59,42 @@ const handleEditSubmit = (updatedProduct) => {
           Encuentra los mejores productos de tecnología para tu setup
         </p>
       </header>
-<ProductForm
-  initialValues={editingProduct}
-  isEditing={Boolean(editingProduct)}
-  onCancel={handleEditCancel}
-  onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
-/>
-      <div className={styles.grid}>
-        {productsState.map((product) => (
-          <ProductCard
-            key={product.id}
-            name={product.name}
-            category={product.category}
-            price={product.price}
-            stock={product.stock}
-            image={product.image}
-            description={product.description}
-            onEdit={() => handleEditStart(product)}
-            onDelete={() => handleDeleteProduct(product.id)}
-          />
-        ))}
-      </div>
+      {isFormOpen ? (
+        <ProductForm
+          initialValues={editingProduct}
+          isEditing={Boolean(editingProduct)}
+          onCancel={handleCloseForm}
+          onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
+        />
+      ) : (
+        <>
+          <div className={styles.toolbar}>
+            <button
+              className={styles.btnAdd}
+              type="button"
+              onClick={handleOpenCreate}
+            >
+              Agregar producto
+            </button>
+          </div>
+
+          <div className={styles.grid}>
+            {productsState.map((product) => (
+              <ProductCard
+                key={product.id}
+                name={product.name}
+                category={product.category}
+                price={product.price}
+                stock={product.stock}
+                image={product.image}
+                description={product.description}
+                onDelete={() => handleDeleteProduct(product.id)}
+                onEdit={() => handleEditStart(product)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
