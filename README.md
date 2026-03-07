@@ -1,16 +1,102 @@
-# React + Vite
+# Proyecto Frontend II – Gestión de Productos 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Descripción del proyecto
 
-Currently, two official plugins are available:
+Aplicación web desarrollada con React que permite gestionar una lista de productos mediante operaciones CRUD (crear, leer, editar y eliminar).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+El proyecto fue desarrollado como parte de las actividades académicas de la asignatura Frontend II, con el objetivo de aplicar conceptos fundamentales del desarrollo de interfaces modernas, arquitectura basada en componentes y manejo de estado en aplicaciones web.
 
-## React Compiler
+La aplicación permite visualizar productos en una interfaz organizada, modificar su información, agregar nuevos elementos y eliminar registros existentes, utilizando un enfoque basado en componentes reutilizables.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Tecnologías utilizadas
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+El proyecto fue desarrollado utilizando las siguientes tecnologías y herramientas:
+
+* React
+* JavaScript
+* HTML
+* CSS
+* Git
+* GitHub
+
+React se utilizó como biblioteca principal para la construcción de la interfaz de usuario mediante componentes reutilizables y manejo del estado de la aplicación.
+
+---
+
+## Arquitectura del proyecto
+
+La aplicación sigue una estructura modular basada en componentes, lo que facilita la organización del código y la reutilización de elementos de interfaz.
+
+```
+src
+ ├── components
+ │   ├── Navbar
+ │   ├── Header
+ │   ├── Footer
+ │   ├── ProductCard
+ │   └── ProductList
+ │
+ ├── pages
+ │   ├── Home
+ │   └── Cart
+ │
+ ├── styles
+ │   └── ProductList.module.css
+ │
+ └── App.jsx
+```
+
+### Componentes principales
+
+**App.jsx**
+Componente principal de la aplicación. Encapsula la estructura general, la navegación entre páginas y la integración de los componentes principales.
+
+**Navbar**
+Componente encargado de la navegación entre las diferentes secciones de la aplicación.
+
+**Header**
+Encabezado de la aplicación que agrupa elementos de navegación y presentación.
+
+**Footer**
+Componente que contiene información adicional y estructura el cierre visual de la interfaz.
+
+**ProductList**
+Componente encargado de renderizar la lista de productos disponibles en la aplicación.
+
+**ProductCard**
+Representa cada producto individual en forma de tarjeta, mostrando información relevante como nombre, imagen y stock.
+
+---
+
+## Funcionalidades implementadas
+
+### Visualización de productos
+
+La aplicación permite visualizar una lista de productos presentados mediante tarjetas individuales. Cada tarjeta muestra la información principal del producto y su disponibilidad en stock.
+
+### Gestión de productos
+
+Se implementó un sistema de gestión de productos utilizando el estado local de React, lo que permite manipular dinámicamente la información sin necesidad de un backend externo.
+
+Las operaciones disponibles incluyen:
+
+* Agregar nuevos productos
+* Editar información de productos existentes
+* Eliminar productos de la lista
+* Mostrar el stock disponible de cada producto
+
+### Interfaz dinámica
+
+El formulario de creación y edición de productos se abre bajo demanda, permitiendo mantener una interfaz limpia y enfocada en la visualización de la información.
+
+También se incorporó la opción de cancelar la operación cuando el usuario decide no continuar con el proceso de creación o edición.
+
+### Navegación entre páginas
+
+La aplicación incluye navegación entre diferentes vistas de la interfaz, como la página principal y la sección de carrito, mediante componentes de navegación integrados en la interfaz.
+
+---
+
+## Flujo de desarrollo de
