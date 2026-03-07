@@ -100,3 +100,41 @@ La aplicación incluye navegación entre diferentes vistas de la interfaz, como 
 ---
 
 ## Flujo de desarrollo de
+
+El desarrollo del proyecto siguió una serie de etapas organizadas que se pueden observar a través de los commits del repositorio.
+
+1.Creación de la estructura inicial del proyecto en React
+
+2.Configuración del componente principal de la aplicación (App.jsx)
+
+3.Implementación de la navegación mediante componentes de interfaz
+
+4.Desarrollo de componentes estructurales como Header y Footer
+
+5.Creación de la lista de productos y su representación mediante tarjetas
+
+6.Integración de estilos CSS para mejorar la presentación visual
+
+7.Implementación de manejo de estado para la gestión de productos
+
+8.Desarrollo de operaciones CRUD (crear, editar y eliminar productos)
+
+9.Integración del formulario dinámico para la administración de productos
+
+10.Pruebas y ajustes finales de la interfaz
+
+##Gestión del proyecto
+
+El desarrollo del proyecto fue gestionado mediante un tablero Kanban en GitHub, donde se organizaron las tareas en diferentes etapas del flujo de trabajo:
+
+*Backlog
+
+*To Do
+
+*In Progress
+
+*Review
+
+*Done
+
+Este sistema permitió realizar un seguimiento del avance del desarrollo, así como organizar las tareas correspondientes a cada fase del proyecto.
