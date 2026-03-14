@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import Footer from './components/Footer';
 import Header from './components/Header';
-import Cart from './pages/Cart';
+import Car from './pages/Cart';
 import CategoryProducts from './pages/CategoryProducts';
 import Home from './pages/Home';
 import ProductList from './pages/ProductList';
@@ -37,7 +37,7 @@ function App() {
       return <CategoryProducts category={selectedCategory} onBack={handleBackFromCategory} />;
     }
     if (activePage === 'products') return <ProductList />;
-    if (activePage === 'cart') return <Cart />;
+    if (activePage === 'cart') return <Car />;
 
     return <Home onOpenCategory={handleOpenCategory} />;
   }, [activePage, selectedCategory]);
