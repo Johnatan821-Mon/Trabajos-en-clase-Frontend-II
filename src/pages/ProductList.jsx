@@ -8,7 +8,7 @@ import { loadProducts, PRODUCTS_STORAGE_KEY } from '../utils/productsStorage';
 const STORAGE_KEY = PRODUCTS_STORAGE_KEY;
 
 function ProductList() {
-  const [productsState, setProductsState] = useState(() => loadProducts());
+  const [productsState, setProductsState] = useState(loadProducts);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
