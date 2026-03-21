@@ -1,10 +1,17 @@
 import styles from "../styles/Navbar.module.css";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import logo from "../assets/react.svg";
 
-function Navbar({ activePage, onNavigate, user, onSignIn, onSignOut }) {
+function Navbar({ user, onSignIn, onSignOut }) {
   const userLabel = user?.name ?? "Invitado";
   const isLoggedIn = Boolean(user);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isHomeActive = location.pathname === '/' || location.pathname.startsWith('/category');
+  const isProductsActive = location.pathname === '/products'
+  const isCartActive = location.pathname === '/cart'
 
   return (
     <nav className={styles.navbar}>
@@ -16,22 +23,22 @@ function Navbar({ activePage, onNavigate, user, onSignIn, onSignOut }) {
       <div className={styles.links}>
         <button
           type="button"
-          className={`${styles.link} ${activePage === "home" ? styles.active : ""}`}
-          onClick={() => onNavigate("home")}
+          className={`${styles.link} ${isHomeActive ? styles.active : ""}`}
+          onClick={() => navigate('/')}
         >
           Inicio
         </button>
         <button
           type="button"
-          className={`${styles.link} ${activePage === "products" ? styles.active : ""}`}
-          onClick={() => onNavigate("products")}
+          className={`${styles.link} ${ isProductsActive ? styles.active : ""}`}
+          onClick={() => navigate('/products')}
         >
           Productos
         </button>
         <button
           type="button"
-          className={`${styles.link} ${activePage === "cart" ? styles.active : ""}`}
-          onClick={() => onNavigate("cart")}
+          className={`${styles.link} ${isCartActive ? styles.active : ""}`}
+          onClick={() => navigate('/cart')}
         >
           Carrito
         </button>
