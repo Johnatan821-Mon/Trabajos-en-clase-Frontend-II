@@ -2,6 +2,7 @@ import {useState} from "react";
 import styles from "./ProductCard.module.css";
 
 function ProductCard({
+  id,
   name,
   category,
   price,
@@ -12,6 +13,8 @@ function ProductCard({
   onDetails,
   onEdit,
   onDelete,
+  onAddToCart,
+  disableAddToCart = false,
 }) {
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -40,12 +43,35 @@ function ProductCard({
         <div className={styles.productFooter}>
           <span className={styles.productPrice}>{price}</span>
           <button
+            type="button"
             className={`${styles.btnLike} ${isLiked ? styles.liked : ''}`}
             onClick={handleLike}
           >
             {isLiked ? '❤️' : '🤍'} {likes} Me gusta
           </button>
         </div>
+
+        {onAddToCart ? (
+          <button
+            type="button"
+            className={styles.btnAdd}
+            onClick={() =>
+              onAddToCart({
+                id,
+                name,
+                category,
+                price,
+                stock,
+                image,
+                description,
+                rating,
+              })
+            }
+            disabled={disableAddToCart}
+          >
+            {disableAddToCart ? 'Sin stock disponible' : 'Agregar al carrito'}
+          </button>
+        ) : null}
 
         {onDetails || onEdit || onDelete ? (
           <div className={styles.cardActions}>

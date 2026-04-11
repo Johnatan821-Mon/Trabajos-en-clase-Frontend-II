@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import styles from '../styles/Cart.module.css';
-import { loadProducts } from '../utils/productsStorage';
+import { loadCartItems } from '../utils/cartStorage';
 
 const SHIPPING_COST = 12;
 
@@ -9,19 +10,9 @@ function formatPrice(value) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
-function Cart() {
-  const [items, setItems] = useState(() =>
-    loadProducts()
-      .slice(0, 3)
-      .map((product) => ({
-        id: product.id,
-        name: product.name,
-        category: product.category,
-        image: product.image,
-        price: Number(product.price) || 0,
-        quantity: 1,
-      }))
-  );
+function Cart({ cartItems, onUpdateQuantity, onRemoveItem, onClearCart }) {
+  const navigate = useNavigate();
+  const items = Array.isArray(cartItems) ? cartItems : loadCartItems();
 
   const subtotal = useMemo(
     () => items.reduce((total, item) => total + item.price * item.quantity, 0),
@@ -37,22 +28,18 @@ function Cart() {
   const total = subtotal + shipping;
 
   const updateQuantity = (id, delta) => {
-    setItems((prev) =>
-      prev
-        .map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                quantity: Math.max(0, item.quantity + delta),
-              }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+    const item = items.find((current) => current.id === id);
+    if (!item || typeof onUpdateQuantity !== 'function') {
+      return;
+    }
+
+    onUpdateQuantity(id, item.quantity + delta);
   };
 
   const clearCart = () => {
-    setItems([]);
+    if (typeof onClearCart === 'function') {
+      onClearCart();
+    }
   };
 
   return (
@@ -60,6 +47,9 @@ function Cart() {
       <header className={styles.header}>
         <h1 className={styles.title}>Carrito</h1>
         <p className={styles.subtitle}>Revisa tu pedido antes de confirmar la compra</p>
+        <button type="button" className={styles.clearBtn} onClick={() => navigate('/')}>
+          Seguir comprando
+        </button>
       </header>
 
       <div className={styles.layout}>
@@ -82,6 +72,7 @@ function Cart() {
                     type="button"
                     className={styles.qtyBtn}
                     onClick={() => updateQuantity(item.id, -1)}
+                    disabled={item.quantity <= 1}
                     aria-label={`Quitar una unidad de ${item.name}`}
                   >
                     -
@@ -93,11 +84,22 @@ function Cart() {
                     type="button"
                     className={styles.qtyBtn}
                     onClick={() => updateQuantity(item.id, 1)}
+                    disabled={item.quantity >= item.stock}
                     aria-label={`Agregar una unidad de ${item.name}`}
                   >
                     +
                   </button>
                 </div>
+
+                {typeof onRemoveItem === 'function' ? (
+                  <button
+                    type="button"
+                    className={styles.clearBtn}
+                    onClick={() => onRemoveItem(item.id)}
+                  >
+                    Eliminar
+                  </button>
+                ) : null}
               </article>
             ))
           )}
@@ -126,7 +128,12 @@ function Cart() {
             <span>{formatPrice(total)}</span>
           </div>
 
-          <button type="button" className={styles.checkoutBtn} disabled={items.length === 0}>
+          <button
+            type="button"
+            className={styles.checkoutBtn}
+            disabled={items.length === 0}
+            onClick={() => navigate('/checkout')}
+          >
             Confirmar compra
           </button>
 

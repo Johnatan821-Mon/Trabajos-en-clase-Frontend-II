@@ -1,3 +1,8 @@
+import audifonosImage from '../assets/audifonos.jpg';
+import laptopImage from '../assets/laptop.avif';
+import smartphoneImage from '../assets/smarphone.png';
+import smartwatchImage from '../assets/smarwaches.jpg';
+
 export const products = [
   {
     id: 1,
@@ -6,7 +11,7 @@ export const products = [
     rating: 4.6,
     price: 4500000,
     stock: 5,
-    image: 'src/assets/laptop.avif',
+    image: laptopImage,
     description: 'Laptop HP Pavilion con procesador Intel Core i5, 8GB de RAM y 256GB de almacenamiento SSD.'
   },
   {
@@ -16,7 +21,7 @@ export const products = [
     rating: 4.8,
     price: 3500000,
     stock: 10,
-    image: 'src/assets/smarphone.png',
+    image: smartphoneImage,
     description: 'Smartphone Samsung Galaxy S21 con pantalla AMOLED de 6.2 pulgadas, procesador Exynos 2100 y cámara de 64MP.'
   },
   {
@@ -26,7 +31,7 @@ export const products = [
     rating: 4.9,
     price: 1200000,
     stock: 8,
-    image: 'src/assets/audifonos.jpg',
+    image: audifonosImage,
     description: 'Audífonos Sony WH-1000XM4 con cancelación de ruido, batería de larga duración y calidad de sonido premium.'
   },
   {
@@ -36,7 +41,7 @@ export const products = [
     rating: 4.7,
     price: 2500000,
     stock: 15,
-    image: 'src/assets/smarwaches.jpg',
+    image: smartwatchImage,
     description: 'Smartwatch Apple Watch Series 6 con monitor de oxígeno en sangre, GPS y resistencia al agua.'
   }
 ]
