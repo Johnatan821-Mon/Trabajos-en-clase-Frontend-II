@@ -15,10 +15,20 @@ function Navbar({ user, onSignIn, onSignOut }) {
 
   return (
     <nav className={styles.navbar}>
-      <div className={styles.brand}>
-        <img className={styles.logo} src={logo} alt="Logo" />
-        <span className={styles.brandName}>Sistema Ventas</span>
-      </div>
+      <button
+        type="button"
+        className={styles.brandButton}
+        onClick={() => navigate('/')}
+        aria-label="Ir al inicio"
+      >
+        <div className={styles.brand}>
+          <img className={styles.logo} src={logo} alt="Logo" />
+          <div className={styles.brandText}>
+            <span className={styles.brandKicker}>Plataforma</span>
+            <span className={styles.brandName}>Sistema de Ventas</span>
+          </div>
+        </div>
+      </button>
 
       <div className={styles.links}>
         <button
@@ -49,11 +59,11 @@ function Navbar({ user, onSignIn, onSignOut }) {
 
         {isLoggedIn ? (
           <button type="button" className={styles.authBtn} onClick={onSignOut}>
-            Sign out
+            Salir
           </button>
         ) : (
           <button type="button" className={styles.authBtn} onClick={onSignIn}>
-            Sign in
+            Ingresar
           </button>
         )}
       </div>
