@@ -2,6 +2,7 @@ import styles from "../styles/Navbar.module.css";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import logo from "../assets/react.svg";
+import robotImage from "../assets/laptop.avif";
 
 function Navbar({ user, onSignIn, onSignOut }) {
   const userLabel = user?.name ?? "Invitado";
@@ -66,6 +67,12 @@ function Navbar({ user, onSignIn, onSignOut }) {
             Ingresar
           </button>
         )}
+      </div>
+
+      <div className={styles.planesLayer} aria-hidden="true">
+        <img className={`${styles.plane} ${styles.planeA}`} src={robotImage} alt="" />
+        <img className={`${styles.plane} ${styles.planeB}`} src={robotImage} alt="" />
+        <img className={`${styles.plane} ${styles.planeC}`} src={robotImage} alt="" />
       </div>
     </nav>
   );
