@@ -12,6 +12,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import OrderConfirmation from './pages/OrderConfirmation';
 import OrderDetail from './pages/OrderDetail';
+import PracticaProductos from './pages/PracticaProductos';
 import ProductList from './pages/ProductList';
 import Register from './pages/Register';
 import UserOrders from './pages/UserOrders';
@@ -24,6 +25,7 @@ import {
 import { CART_STORAGE_KEY, loadCartItems } from './utils/cartStorage';
 import { saveOrder } from './utils/ordersStorage';
 import './App.css';
+import PracticaRegistro from './pages/PracticaRegistro';
 
 function App() {
   const { currentUser, logout } = useAuth();
@@ -217,6 +219,8 @@ function App() {
           }
         />
         <Route path='*' element={<Navigate to="/" replace/>}/>
+        <Route path="/practica" element={<PracticaProductos />} />
+        <Route path="/practica-registro" element={<PracticaRegistro />} />
          
        </Routes>
 
