@@ -57,6 +57,17 @@ const extractProducts = (response) => {
   return [];
 };
 
+const toUpsertBody = (product) => ({
+  categoryId: Number(product.categoryId) || null,
+  sku: String(product.sku ?? '').trim(),
+  name: String(product.name ?? '').trim(),
+  description: String(product.description ?? '').trim(),
+  image: String(product.image ?? '').trim() || null,
+  price: Number(product.price) || 0,
+  stockQty: Number(product.stockQty ?? product.stock) || 0,
+  isActive: product.isActive !== false,
+});
+
 const buildQueryString = (filters = {}) => {
   const params = new URLSearchParams();
 
@@ -181,7 +192,7 @@ async function createProductAsync(productData) {
   const token = loadSessionToken();
   const response = await requestJson('/admin/products', {
     method: 'POST',
-    body: productData,
+    body: toUpsertBody(productData),
     token,
   });
 
@@ -198,7 +209,7 @@ async function updateProductAsync(productId, updates) {
   const token = loadSessionToken();
   const response = await requestJson(`/admin/products/${normalizedId}`, {
     method: 'PUT',
-    body: updates,
+    body: toUpsertBody(updates),
     token,
   });
 
