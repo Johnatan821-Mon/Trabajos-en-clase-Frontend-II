@@ -1,0 +1,147 @@
+import { useEffect, useState } from 'react';
+
+import ProductCard from '../components/ProductCard';
+import ProductForm from '../components/ProductForm';
+import styles from './ProductList.module.css';
+import useAuth from '../hooks/useAuth';
+import productService from '../services/productService';
+
+function ProductList() {
+  const { isAdmin } = useAuth();
+  const [productsState, setProductsState] = useState([]);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  useEffect(() => {
+    productService.getProductsAsync().then(setProductsState).catch(() => {});
+  }, []);
+
+  const handleOpenCreate = () => {
+    setEditingProduct(null);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setEditingProduct(null);
+    setIsFormOpen(false);
+  };
+
+  const handleAddProduct = (product) => {
+    setProductsState((prev) => {
+      const maxId = prev.reduce((acc, item) => Math.max(acc, item.id), 0);
+      const nextId = maxId + 1;
+
+      return [
+        ...prev,
+        {
+          ...product,
+          id: nextId,
+          likes: Number(product.likes) || 0,
+          isLiked: Boolean(product.isLiked),
+        },
+      ];
+    });
+
+    handleCloseForm();
+  };
+
+  const handleDeleteProduct = (id) => {
+    setProductsState((prev) => prev.filter((product) => product.id !== id));
+
+    if (editingProduct?.id === id) {
+      handleCloseForm();
+    }
+  };
+
+  const handleEditStart = (product) => {
+    setEditingProduct(product);
+    setIsFormOpen(true);
+  };
+
+  const handleEditSubmit = (updatedProduct) => {
+    setProductsState((prev) =>
+      prev.map((product) =>
+        product.id === updatedProduct.id
+          ? {
+              ...updatedProduct,
+              likes: Number(updatedProduct.likes ?? product.likes) || 0,
+              isLiked: Boolean(updatedProduct.isLiked ?? product.isLiked),
+            }
+          : product
+      )
+    );
+    handleCloseForm();
+  };
+
+  const handleToggleLike = (id) => {
+    setProductsState((prev) => {
+      return prev.map((product) => {
+        if (product.id !== id) {
+          return product;
+        }
+
+        const currentLikes = Number(product.likes) || 0;
+        const wasLiked = Boolean(product.isLiked);
+
+        return {
+          ...product,
+          isLiked: !wasLiked,
+          likes: wasLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
+        };
+      });
+    });
+  };
+
+  return (
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Productos Informáticos</h1>
+        <p className={styles.subtitle}>
+          Encuentra los mejores productos de tecnología para tu setup
+        </p>
+      </header>
+
+      {isAdmin && isFormOpen ? (
+        <ProductForm
+          initialValues={editingProduct}
+          isEditing={Boolean(editingProduct)}
+          onCancel={handleCloseForm}
+          onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
+        />
+      ) : (
+        <>
+          {isAdmin && (
+            <div className={styles.toolbar}>
+              <button className={styles.btnAdd} type="button" onClick={handleOpenCreate}>
+                Agregar producto
+              </button>
+            </div>
+          )}
+
+          <div className={styles.grid}>
+            {productsState.map((product) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                name={product.name}
+                category={product.category}
+                price={product.price}
+                rating={product.rating}
+                stock={product.stock}
+                image={product.image}
+                description={product.description}
+                likes={product.likes}
+                isLiked={product.isLiked}
+                onToggleLike={() => handleToggleLike(product.id)}
+                onDelete={isAdmin ? () => handleDeleteProduct(product.id) : undefined}
+                onEdit={isAdmin ? () => handleEditStart(product) : undefined}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default ProductList;
