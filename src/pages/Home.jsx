@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import homeStyles from '../styles/Home.module.css';
 import productService from '../services/productService';
+import { getPlaceholderImage } from '../utils/placeholderImage';
 
 function Home({ onOpenCategory }) {
   const [productsState, setProductsState] = useState([]);
@@ -56,7 +57,7 @@ function Home({ onOpenCategory }) {
             onClick={() => navigate(`/category/${encodeURIComponent(category)}`)}
             aria-label={`Ver productos de ${category}`}
           >
-            <img className={homeStyles.categoryImage} src={product.image || `https://picsum.photos/seed/${product.id}/400/300`} alt={product.name} />
+            <img className={homeStyles.categoryImage} src={getPlaceholderImage(product.image, { category, id: product.id })} alt={product.name} />
             <div className={homeStyles.categoryInfo}>
               <span className={homeStyles.categoryName}>{category}</span>
             </div>

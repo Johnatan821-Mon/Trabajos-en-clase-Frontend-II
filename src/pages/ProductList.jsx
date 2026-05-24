@@ -3,26 +3,18 @@ import { useEffect, useState } from 'react';
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
 import styles from './ProductList.module.css';
-import { loadProducts, PRODUCTS_STORAGE_KEY } from '../utils/productsStorage';
-
-const STORAGE_KEY = PRODUCTS_STORAGE_KEY;
+import useAuth from '../hooks/useAuth';
+import productService from '../services/productService';
 
 function ProductList() {
-  const [productsState, setProductsState] = useState(loadProducts);
+  const { isAdmin } = useAuth();
+  const [productsState, setProductsState] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(productsState));
-    } catch (error) {
-      void error;
-    }
-  }, [productsState]);
+    productService.getProductsAsync().then(setProductsState).catch(() => {});
+  }, []);
 
   const handleOpenCreate = () => {
     setEditingProduct(null);
@@ -109,7 +101,7 @@ function ProductList() {
         </p>
       </header>
 
-      {isFormOpen ? (
+      {isAdmin && isFormOpen ? (
         <ProductForm
           initialValues={editingProduct}
           isEditing={Boolean(editingProduct)}
@@ -118,16 +110,19 @@ function ProductList() {
         />
       ) : (
         <>
-          <div className={styles.toolbar}>
-            <button className={styles.btnAdd} type="button" onClick={handleOpenCreate}>
-              Agregar producto
-            </button>
-          </div>
+          {isAdmin && (
+            <div className={styles.toolbar}>
+              <button className={styles.btnAdd} type="button" onClick={handleOpenCreate}>
+                Agregar producto
+              </button>
+            </div>
+          )}
 
           <div className={styles.grid}>
             {productsState.map((product) => (
               <ProductCard
                 key={product.id}
+                id={product.id}
                 name={product.name}
                 category={product.category}
                 price={product.price}
@@ -138,8 +133,8 @@ function ProductList() {
                 likes={product.likes}
                 isLiked={product.isLiked}
                 onToggleLike={() => handleToggleLike(product.id)}
-                onDelete={() => handleDeleteProduct(product.id)}
-                onEdit={() => handleEditStart(product)}
+                onDelete={isAdmin ? () => handleDeleteProduct(product.id) : undefined}
+                onEdit={isAdmin ? () => handleEditStart(product) : undefined}
               />
             ))}
           </div>

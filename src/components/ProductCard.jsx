@@ -1,5 +1,7 @@
 import {useState} from "react";
 import styles from "./ProductCard.module.css";
+import { getPlaceholderImage } from '../utils/placeholderImage';
+import { formatCOP } from '../utils/formatCOP';
 
 function ProductCard({
   id,
@@ -31,7 +33,7 @@ function ProductCard({
 
   return (
     <article className={styles.productCard}>
-      <img src={image || `https://picsum.photos/seed/${id}/400/300`} alt={name} className={styles.productImage} />
+      <img src={getPlaceholderImage(image, { category, id })} alt={name} className={styles.productImage} />
       <div className={styles.productInfo}>
         <span className={styles.productCategory}>{category}</span>
         <h3 className={styles.productName}>{name}</h3>
@@ -41,7 +43,7 @@ function ProductCard({
         <p className={styles.productDescription}>{description}</p>
         <p className={styles.productStock}>Stock: {stock}</p>
         <div className={styles.productFooter}>
-          <span className={styles.productPrice}>{price}</span>
+          <span className={styles.productPrice}>{formatCOP(price)}</span>
           <button
             type="button"
             className={`${styles.btnLike} ${isLiked ? styles.liked : ''}`}
