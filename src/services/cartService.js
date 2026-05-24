@@ -1,6 +1,7 @@
 import { appConfig } from '../config';
 import { loadSessionToken, saveSessionToken } from '../utils/authStorage';
 import { loadCart, saveCart, saveCartItems } from '../utils/cartStorage';
+import { loadProducts } from '../utils/productsStorage';
 
 import { requestJson } from './http';
 
@@ -13,11 +14,47 @@ const normalizeProductStock = (product) => {
   return Number.isFinite(parsedStock) && parsedStock >= 0 ? parsedStock : 0;
 };
 
-const normalizeCartResponse = (payload) =>
-  saveCart({
+const normalizeCartItem = (item, productsById) => {
+  const stock = normalizeProductStock(item);
+  const product = productsById.get(Number(item.productId ?? item.id)) ?? {};
+  const price = Number(item.unitPrice ?? item.price) || 0;
+  const category =
+    item.category ?? item.categoryName ?? product.categoryName ?? product.category ?? '';
+
+  return {
+    ...item,
+    id: Number(item.productId ?? item.id),
+    productId: Number(item.productId ?? item.id),
+    price,
+    unitPrice: price,
+    stock,
+    stockQty: stock,
+    productStock: stock,
+    category,
+    categoryName: category,
+    lineTotal: price * (item.quantity ?? 1),
+  };
+};
+
+const buildProductsById = () => {
+  const products = loadProducts();
+  return new Map(
+    products.map((p) => [Number(p.productId ?? p.id), p])
+  );
+};
+
+const normalizeCartResponse = (payload) => {
+  const productsById = buildProductsById();
+  const items = Array.isArray(payload?.items)
+    ? payload.items.map((item) => normalizeCartItem(item, productsById))
+    : payload?.items;
+
+  return saveCart({
     ...payload,
+    items,
     updatedAt: payload?.updatedAt ?? new Date().toISOString(),
   });
+};
 
 const getGuestCartIdForAuth = (cart = loadCart()) => {
   const normalizedCartId = String(cart?.id ?? '').trim();

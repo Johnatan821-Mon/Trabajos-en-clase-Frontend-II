@@ -3,19 +3,16 @@ import { useNavigate } from 'react-router-dom';
 
 import styles from '../styles/Cart.module.css';
 import { loadCartItems } from '../utils/cartStorage';
+import { formatCOP } from '../utils/formatCOP';
 
-const SHIPPING_COST = 12;
-
-function formatPrice(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
-}
+const SHIPPING_COST = 12000;
 
 function Cart({ cartItems, onUpdateQuantity, onRemoveItem, onClearCart }) {
   const navigate = useNavigate();
   const items = Array.isArray(cartItems) ? cartItems : loadCartItems();
 
   const subtotal = useMemo(
-    () => items.reduce((total, item) => total + item.price * item.quantity, 0),
+    () => items.reduce((total, item) => total + (Number(item.unitPrice ?? item.price) || 0) * item.quantity, 0),
     [items]
   );
 
@@ -64,7 +61,7 @@ function Cart({ cartItems, onUpdateQuantity, onRemoveItem, onClearCart }) {
                 <div className={styles.itemInfo}>
                   <p className={styles.itemCategory}>{item.category}</p>
                   <h2 className={styles.itemName}>{item.name}</h2>
-                  <p className={styles.itemPrice}>{formatPrice(item.price)}</p>
+                  <p className={styles.itemPrice}>{formatCOP(item.unitPrice ?? item.price)}</p>
                 </div>
 
                 <div className={styles.qtyBox}>
@@ -115,17 +112,17 @@ function Cart({ cartItems, onUpdateQuantity, onRemoveItem, onClearCart }) {
 
           <div className={styles.summaryRow}>
             <span>Subtotal</span>
-            <span>{formatPrice(subtotal)}</span>
+            <span>{formatCOP(subtotal)}</span>
           </div>
 
           <div className={styles.summaryRow}>
             <span>Envio</span>
-            <span>{formatPrice(shipping)}</span>
+            <span>{formatCOP(shipping)}</span>
           </div>
 
           <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
             <span>Total</span>
-            <span>{formatPrice(total)}</span>
+            <span>{formatCOP(total)}</span>
           </div>
 
           <button

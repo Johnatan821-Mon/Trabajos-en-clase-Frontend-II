@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
@@ -6,11 +6,16 @@ import styles from './ProductList.module.css';
 import useAuth from '../hooks/useAuth';
 import productService from '../services/productService';
 
-function ProductList() {
+function ProductList({ cartItems = [], onAddToCart }) {
   const { isAdmin } = useAuth();
   const [productsState, setProductsState] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const cartQuantityByProductId = useMemo(
+    () => new Map((cartItems).map((item) => [item.id, item.quantity])),
+    [cartItems]
+  );
 
   useEffect(() => {
     productService.getProductsAsync().then(setProductsState).catch(() => {});
@@ -26,15 +31,17 @@ function ProductList() {
     setIsFormOpen(false);
   };
 
-  const handleAddProduct = (product) => {
+  const handleAddProduct = async (product) => {
+    const saved = await productService.createProductAsync(product);
     setProductsState((prev) => {
       const maxId = prev.reduce((acc, item) => Math.max(acc, item.id), 0);
-      const nextId = maxId + 1;
+      const nextId = saved?.id ?? maxId + 1;
 
       return [
         ...prev,
         {
           ...product,
+          ...saved,
           id: nextId,
           likes: Number(product.likes) || 0,
           isLiked: Boolean(product.isLiked),
@@ -45,7 +52,8 @@ function ProductList() {
     handleCloseForm();
   };
 
-  const handleDeleteProduct = (id) => {
+  const handleDeleteProduct = async (id) => {
+    await productService.deleteProductAsync(id);
     setProductsState((prev) => prev.filter((product) => product.id !== id));
 
     if (editingProduct?.id === id) {
@@ -58,12 +66,14 @@ function ProductList() {
     setIsFormOpen(true);
   };
 
-  const handleEditSubmit = (updatedProduct) => {
+  const handleEditSubmit = async (updatedProduct) => {
+    const saved = await productService.updateProductAsync(updatedProduct.id, updatedProduct);
     setProductsState((prev) =>
       prev.map((product) =>
         product.id === updatedProduct.id
           ? {
               ...updatedProduct,
+              ...saved,
               likes: Number(updatedProduct.likes ?? product.likes) || 0,
               isLiked: Boolean(updatedProduct.isLiked ?? product.isLiked),
             }
@@ -133,6 +143,8 @@ function ProductList() {
                 likes={product.likes}
                 isLiked={product.isLiked}
                 onToggleLike={() => handleToggleLike(product.id)}
+                onAddToCart={onAddToCart}
+                disableAddToCart={(cartQuantityByProductId.get(product.id) ?? 0) >= product.stock}
                 onDelete={isAdmin ? () => handleDeleteProduct(product.id) : undefined}
                 onEdit={isAdmin ? () => handleEditStart(product) : undefined}
               />

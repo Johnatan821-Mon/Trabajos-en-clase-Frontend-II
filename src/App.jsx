@@ -93,8 +93,8 @@ function App() {
             path="/category/:categoryName"
             element={<CategoryProducts cartItems={cartItems} onAddToCart={addToCart} />}
           />
-          <Route path="/products" element={<ProductList />} />
-          <Route path="/product" element={<ProductList />} />
+          <Route path="/products" element={<ProductList cartItems={cartItems} onAddToCart={addToCart} />} />
+          <Route path="/product" element={<ProductList cartItems={cartItems} onAddToCart={addToCart} />} />
           <Route
             path="/cart"
             element={
