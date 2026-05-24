@@ -25,6 +25,11 @@ function Register() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (values.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+
     if (values.password !== values.confirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
@@ -97,7 +102,7 @@ function Register() {
               name="password"
               value={values.password}
               onChange={handleChange}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               type="password"
             />
           </label>
