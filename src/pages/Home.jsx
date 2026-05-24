@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import homeStyles from '../styles/Home.module.css';
-import { loadProducts } from '../utils/productsStorage';
+import productService from '../services/productService';
 
 function Home({ onOpenCategory }) {
-  const [productsState] = useState(loadProducts);
+  const [productsState, setProductsState] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    productService.getProductsAsync().then(setProductsState).catch(() => {});
+  }, []);
 
   const categoryTiles = useMemo(() => {
     const bestByCategory = new Map();
@@ -52,7 +56,7 @@ function Home({ onOpenCategory }) {
             onClick={() => navigate(`/category/${encodeURIComponent(category)}`)}
             aria-label={`Ver productos de ${category}`}
           >
-            <img className={homeStyles.categoryImage} src={product.image} alt={product.name} />
+            <img className={homeStyles.categoryImage} src={product.image || `https://picsum.photos/seed/${product.id}/400/300`} alt={product.name} />
             <div className={homeStyles.categoryInfo}>
               <span className={homeStyles.categoryName}>{category}</span>
             </div>

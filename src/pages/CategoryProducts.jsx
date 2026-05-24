@@ -1,17 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import ProductCard from '../components/ProductCard';
 import ProductDetailsModal from '../components/ProductDetailsModal';
 import styles from '../styles/CategoryProducts.module.css';
 import productListStyles from './ProductList.module.css';
-import { loadProducts } from '../utils/productsStorage';
+import productService from '../services/productService';
 
 function CategoryProducts({ cartItems, onAddToCart }) {
   const [query, setQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [productsState] = useState(loadProducts);
+  const [productsState, setProductsState] = useState([]);
+
+  useEffect(() => {
+    productService.getProductsAsync().then(setProductsState).catch(() => {});
+  }, []);
   const navigate = useNavigate();
   const { categoryName } = useParams();
 
