@@ -48,6 +48,15 @@ export function loadProducts() {
   }
 }
 
+export function saveProducts(products) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const normalized = Array.isArray(products) ? products.map(normalizeProduct) : [];
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+}
+
 export const PRODUCTS_STORAGE_KEY = STORAGE_KEY;
 export const PRODUCTS_DEFAULT_RATING = DEFAULT_RATING;
 export const PRODUCTS_DEFAULT_LIKES = DEFAULT_LIKES;

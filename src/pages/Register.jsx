@@ -6,13 +6,14 @@ import styles from '../styles/AuthPage.module.css';
 
 function Register() {
   const [values, setValues] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const { register, isSubmittingAuth } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (event) => {
@@ -21,7 +22,7 @@ function Register() {
     setError('');
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (values.password !== values.confirmPassword) {
@@ -29,8 +30,9 @@ function Register() {
       return;
     }
 
-    const result = register({
-      name: values.name,
+    const result = await register({
+      firstName: values.firstName,
+      lastName: values.lastName,
       email: values.email,
       password: values.password,
     });
@@ -58,10 +60,21 @@ function Register() {
             <span className={styles.label}>Nombre</span>
             <input
               className={styles.input}
-              name="name"
-              value={values.name}
+              name="firstName"
+              value={values.firstName}
               onChange={handleChange}
-              placeholder="Ejemplo: Ana Gómez"
+              placeholder="Ejemplo: Ana"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Apellido</span>
+            <input
+              className={styles.input}
+              name="lastName"
+              value={values.lastName}
+              onChange={handleChange}
+              placeholder="Ejemplo: Gómez"
             />
           </label>
 
@@ -103,8 +116,8 @@ function Register() {
 
           {error ? <p className={styles.error}>{error}</p> : null}
 
-          <button type="submit" className={styles.primaryButton}>
-            Crear cuenta
+          <button type="submit" className={styles.primaryButton} disabled={isSubmittingAuth}>
+            {isSubmittingAuth ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
         </form>
 

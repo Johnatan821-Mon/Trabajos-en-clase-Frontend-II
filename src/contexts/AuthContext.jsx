@@ -1,84 +1,129 @@
-import { createContext, useMemo, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 
-import {
-  clearSessionUser,
-  createUser,
-  findUserByEmail,
-  loadSessionUser,
-  saveSessionUser,
-} from '../utils/authStorage';
+import authService from '../services/authService';
 
 const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(loadSessionUser);
+  const [currentUser, setCurrentUser] = useState(authService.getSessionUser);
+  const [authError, setAuthError] = useState('');
+  const [isHydratingSession, setIsHydratingSession] = useState(true);
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
 
-  const register = ({ name, email, password }) => {
-    const normalizedEmail = String(email ?? '')
-      .trim()
-      .toLowerCase();
+  useEffect(() => {
+    let isMounted = true;
 
-    if (!name?.trim()) {
-      return { ok: false, error: 'Ingresa un nombre para crear la cuenta.' };
-    }
+    const restoreSession = async () => {
+      setIsHydratingSession(true);
 
-    if (!normalizedEmail) {
-      return { ok: false, error: 'Ingresa un correo electrónico válido.' };
-    }
+      try {
+        const result = await authService.hydrateSession();
 
-    if (!password || password.length < 6) {
-      return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
-    }
+        if (!isMounted) {
+          return;
+        }
 
-    if (findUserByEmail(normalizedEmail)) {
-      return { ok: false, error: 'Ya existe una cuenta registrada con ese correo.' };
-    }
-
-    const user = createUser({ name: name.trim(), email: normalizedEmail, password });
-    saveSessionUser(user);
-    setCurrentUser(user);
-
-    return { ok: true, user };
-  };
-
-  const login = ({ email, password }) => {
-    const user = findUserByEmail(email);
-
-    if (!user || user.password !== password) {
-      return { ok: false, error: 'Credenciales inválidas. Verifica correo y contraseña.' };
-    }
-
-    const sessionUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      address: user.address,
-      city: user.city,
-      postalCode: user.postalCode,
+        setCurrentUser(result.user ?? null);
+      } finally {
+        if (isMounted) {
+          setIsHydratingSession(false);
+        }
+      }
     };
 
-    saveSessionUser(sessionUser);
-    setCurrentUser(sessionUser);
+    restoreSession();
 
-    return { ok: true, user: sessionUser };
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const register = async (payload) => {
+    setIsSubmittingAuth(true);
+    setAuthError('');
+
+    const result = await authService.register(payload);
+
+    if (result.ok) {
+      setCurrentUser(result.user);
+    } else {
+      setAuthError(result.error ?? 'No fue posible crear la cuenta.');
+    }
+
+    setIsSubmittingAuth(false);
+
+    return result;
   };
 
-  const logout = () => {
-    clearSessionUser();
+  const login = async (payload) => {
+    setIsSubmittingAuth(true);
+    setAuthError('');
+
+    const result = await authService.login(payload);
+
+    if (result.ok) {
+      setCurrentUser(result.user);
+    } else {
+      setAuthError(result.error ?? 'No fue posible iniciar sesión.');
+    }
+
+    setIsSubmittingAuth(false);
+
+    return result;
+  };
+
+  const logout = async () => {
+    setAuthError('');
+    await authService.logout();
     setCurrentUser(null);
   };
 
-  const value = useMemo(
-    () => ({
-      currentUser,
-      isAuthenticated: Boolean(currentUser),
-      login,
-      logout,
-      register,
-    }),
-    [currentUser]
-  );
+  const updateProfile = async (updates) => {
+    setAuthError('');
+
+    const result = await authService.updateProfile(currentUser?.id, updates);
+
+    if (result.ok && result.user) {
+      setCurrentUser(result.user);
+    } else if (!result.ok) {
+      setAuthError(result.error ?? 'No fue posible actualizar el perfil.');
+    }
+
+    return result;
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    setAuthError('');
+
+    const result = await authService.changePassword(currentUser?.id, currentPassword, newPassword);
+
+    if (result.ok && result.user) {
+      setCurrentUser(result.user);
+    } else if (!result.ok) {
+      setAuthError(result.error ?? 'No fue posible cambiar la contraseña.');
+    }
+
+    return result;
+  };
+
+  const clearAuthError = () => {
+    setAuthError('');
+  };
+
+  const value = {
+    authError,
+    clearAuthError,
+    changePassword,
+    currentUser,
+    isAuthenticated: Boolean(currentUser),
+    isAdmin: currentUser?.role === 'ADMIN',
+    isHydratingSession,
+    isSubmittingAuth,
+    login,
+    logout,
+    register,
+    updateProfile,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

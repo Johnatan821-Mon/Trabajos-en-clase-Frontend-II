@@ -7,7 +7,7 @@ import styles from '../styles/AuthPage.module.css';
 function Login() {
   const [values, setValues] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, isSubmittingAuth } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -17,10 +17,10 @@ function Login() {
     setError('');
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const result = login({
+    const result = await login({
       email: values.email.trim(),
       password: values.password,
     });
@@ -69,8 +69,8 @@ function Login() {
 
           {error ? <p className={styles.error}>{error}</p> : null}
 
-          <button type="submit" className={styles.primaryButton}>
-            Ingresar
+          <button type="submit" className={styles.primaryButton} disabled={isSubmittingAuth}>
+            {isSubmittingAuth ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
 

@@ -87,4 +87,17 @@ export function loadOrdersByUserId(userId) {
   return loadOrders().filter((order) => order.userId === normalizedUserId);
 }
 
+export function saveOrders(orders) {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const normalizedOrders = Array.isArray(orders)
+    ? orders.map(normalizeOrder).filter((order) => order.id)
+    : [];
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedOrders));
+  return normalizedOrders;
+}
+
 export const ORDERS_STORAGE_KEY = STORAGE_KEY;
