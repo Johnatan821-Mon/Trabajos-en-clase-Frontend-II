@@ -3,8 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import logo from "../assets/react.svg";
 import robotImage from "../assets/laptop.avif";
+import useCart from "../hooks/useCart";
 
 function Navbar({ user, onSignIn, onSignOut }) {
+  const { cartItemCount } = useCart();
   const userLabel = user?.name ?? "Invitado";
   const isLoggedIn = Boolean(user);
   const navigate = useNavigate();
@@ -52,6 +54,9 @@ function Navbar({ user, onSignIn, onSignOut }) {
           onClick={() => navigate('/cart')}
         >
           Carrito
+          {cartItemCount > 0 && (
+            <span className={styles.cartBadge}>{cartItemCount}</span>
+          )}
         </button>
       </div>
 

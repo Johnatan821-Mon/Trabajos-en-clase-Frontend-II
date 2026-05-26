@@ -1,21 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
 import styles from './ProductList.module.css';
 import useAuth from '../hooks/useAuth';
+import useCart from '../hooks/useCart';
 import productService from '../services/productService';
 
-function ProductList({ cartItems = [], onAddToCart }) {
+function ProductList() {
   const { isAdmin } = useAuth();
+  const { addToCart } = useCart();
   const [productsState, setProductsState] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [toast, setToast] = useState('');
 
-  const cartQuantityByProductId = useMemo(
-    () => new Map((cartItems).map((item) => [item.id, item.quantity])),
-    [cartItems]
-  );
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    setToast(`"${product.name}" agregado al carrito`);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   useEffect(() => {
     productService.getProductsAsync().then(setProductsState).catch(() => {});
@@ -104,8 +108,9 @@ function ProductList({ cartItems = [], onAddToCart }) {
 
   return (
     <div className={styles.container}>
+      {toast && <div className={styles.toast}>{toast}</div>}
       <header className={styles.header}>
-        <h1 className={styles.title}>Productos Informáticos</h1>
+        <h1 className={styles.title}>Nuestros Productos</h1>
         <p className={styles.subtitle}>
           Encuentra los mejores productos de tecnología para tu setup
         </p>
@@ -143,8 +148,8 @@ function ProductList({ cartItems = [], onAddToCart }) {
                 likes={product.likes}
                 isLiked={product.isLiked}
                 onToggleLike={() => handleToggleLike(product.id)}
-                onAddToCart={onAddToCart}
-                disableAddToCart={(cartQuantityByProductId.get(product.id) ?? 0) >= product.stock}
+                onAddToCart={handleAddToCart}
+                disableAddToCart={product.stock === 0}
                 onDelete={isAdmin ? () => handleDeleteProduct(product.id) : undefined}
                 onEdit={isAdmin ? () => handleEditStart(product) : undefined}
               />

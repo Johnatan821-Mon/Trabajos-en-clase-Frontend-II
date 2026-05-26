@@ -259,16 +259,19 @@ async function updateCartItemQuantityAsync(productId, nextQuantity, currentItems
     return buildLocalCart(updateCartItemQuantity(productId, nextQuantity, currentItems));
   }
 
-  const token = await ensureRemoteCartSession();
-  const response = await requestJson(`/cart/items/${productId}`, {
-    method: 'PATCH',
-    token,
-    body: {
-      quantity: Math.max(1, Math.floor(Number(nextQuantity) || 1)),
-    },
-  });
-
-  return normalizeCartResponse(response);
+  try {
+    const token = await ensureRemoteCartSession();
+    const response = await requestJson(`/cart/items/${productId}`, {
+      method: 'PATCH',
+      token,
+      body: {
+        quantity: Math.max(1, Math.floor(Number(nextQuantity) || 1)),
+      },
+    });
+    return normalizeCartResponse(response);
+  } catch {
+    return buildLocalCart(updateCartItemQuantity(productId, nextQuantity, currentItems));
+  }
 }
 
 async function removeCartItemAsync(productId, currentItems = getCartItems()) {
