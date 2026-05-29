@@ -3,25 +3,26 @@ import { useEffect, useState } from "react";
 import styles from "../styles/ProductForm.module.css";
 
 const emptyValues = {
+  sku: "",
   name: "",
-  category: "",
+  categoryId: "",
   price: "",
   stock: "",
   image: "",
   description: "",
-  
 };
-function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
+
+function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEditing = false }) {
   const [values, setValues] = useState(emptyValues);
 
-  // useEffect: si cambia initialValues (prop), precargamos el formulario
   useEffect(() => {
     if (initialValues) {
       setValues({
+        sku: initialValues.sku ?? "",
         name: initialValues.name ?? "",
-        category: initialValues.category ?? "",
+        categoryId: initialValues.categoryId ?? "",
         price: initialValues.price ?? "",
-        stock: initialValues.stock ?? "",
+        stock: initialValues.stock ?? initialValues.stockQty ?? "",
         image: initialValues.image ?? "",
         description: initialValues.description ?? "",
       });
@@ -32,35 +33,37 @@ function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    // prev = estado anterior del formulario (NO es prop)
     setValues((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
+    const sku = values.sku.trim();
     const name = values.name.trim();
-    const category = values.category.trim();
+    const categoryId = Number(values.categoryId);
     const image = values.image.trim();
     const description = values.description.trim();
-
     const price = Number(values.price);
     const stock = Number(values.stock);
+
+    if (!sku) return;
+    if (!name) return;
+    if (!categoryId) return;
+    if (!Number.isFinite(price) || price <= 0) return;
+    if (!Number.isFinite(stock) || stock < 0) return;
 
     const parsedRating = Number(initialValues?.rating ?? 3);
     const rating = Number.isFinite(parsedRating) ? Math.min(5, Math.max(1, parsedRating)) : 3;
 
-    if (!name) return;
-    if (!Number.isFinite(price) || price <= 0) return;
-    if (!Number.isFinite(stock) || stock < 0) return;
-
     onSubmit({
       ...initialValues,
+      sku,
       name,
-      category,
+      categoryId,
       price,
       stock,
+      stockQty: stock,
       image,
       description,
       rating,
@@ -83,6 +86,38 @@ function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.row}>
+          <label className={styles.field}>
+            <span className={styles.label}>SKU</span>
+            <input
+              className={styles.input}
+              name="sku"
+              value={values.sku}
+              onChange={handleChange}
+              placeholder="Ej: TECH-KEY-001"
+              required
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Categoría</span>
+            <select
+              className={styles.input}
+              name="categoryId"
+              value={values.categoryId}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Selecciona una categoría</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <label className={styles.field}>
           <span className={styles.label}>Nombre</span>
           <input
@@ -91,17 +126,7 @@ function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
             value={values.name}
             onChange={handleChange}
             placeholder="Ej: Teclado gamer"
-          />
-        </label>
-
-        <label className={styles.field}>
-          <span className={styles.label}>Categoría</span>
-          <input
-            className={styles.input}
-            name="category"
-            value={values.category}
-            onChange={handleChange}
-            placeholder="Ej: Accesorios"
+            required
           />
         </label>
 
@@ -116,6 +141,7 @@ function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
               value={values.price}
               onChange={handleChange}
               placeholder="Ej: 199990"
+              required
             />
           </label>
 
@@ -129,6 +155,7 @@ function ProductForm({ initialValues, onSubmit, onCancel, isEditing = false }) {
               value={values.stock}
               onChange={handleChange}
               placeholder="Ej: 10"
+              required
             />
           </label>
         </div>

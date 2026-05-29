@@ -230,11 +230,21 @@ async function deleteProductAsync(productId) {
   });
 }
 
+async function getCategoriesAsync() {
+  const response = await requestJson('/categories', { method: 'GET' });
+  const list = Array.isArray(response) ? response : [];
+  return list.map((cat) => ({
+    id: Number(cat.id ?? cat.categoryId),
+    name: String(cat.name ?? ''),
+  }));
+}
+
 const productService = {
   createProduct,
   createProductAsync,
   deleteProduct,
   deleteProductAsync,
+  getCategoriesAsync,
   getProductById,
   getProductByIdAsync,
   getProducts,

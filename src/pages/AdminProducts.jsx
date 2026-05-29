@@ -9,6 +9,7 @@ import styles from '../styles/AdminProducts.module.css';
 function AdminProducts() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
@@ -19,16 +20,20 @@ function AdminProducts() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       setLoadError('');
 
       try {
-        const data = await productService.getProductsAsync();
+        const [data, cats] = await Promise.all([
+          productService.getProductsAsync(),
+          productService.getCategoriesAsync(),
+        ]);
 
         if (!isMounted) return;
 
         setProducts(data);
+        setCategories(cats);
       } catch (error) {
         if (!isMounted) return;
 
@@ -42,7 +47,7 @@ function AdminProducts() {
       }
     };
 
-    fetchProducts();
+    fetchData();
 
     return () => {
       isMounted = false;
@@ -176,6 +181,7 @@ function AdminProducts() {
           {submitError && <p className={styles.errorMessage}>{submitError}</p>}
           <ProductForm
             initialValues={editingProduct}
+            categories={categories}
             isEditing={Boolean(editingProduct)}
             onCancel={handleCloseForm}
             onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
