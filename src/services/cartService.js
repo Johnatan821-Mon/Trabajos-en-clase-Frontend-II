@@ -241,17 +241,20 @@ async function addToCartAsync(product, currentItems = getCartItems()) {
     return buildLocalCart(addToCart(product, currentItems));
   }
 
-  const token = await ensureRemoteCartSession();
-  const response = await requestJson('/cart/items', {
-    method: 'POST',
-    token,
-    body: {
-      productId: Number(product?.productId ?? product?.id),
-      quantity: 1,
-    },
-  });
-
-  return normalizeCartResponse(response);
+  try {
+    const token = await ensureRemoteCartSession();
+    const response = await requestJson('/cart/items', {
+      method: 'POST',
+      token,
+      body: {
+        productId: Number(product?.productId ?? product?.id),
+        quantity: 1,
+      },
+    });
+    return normalizeCartResponse(response);
+  } catch {
+    return buildLocalCart(addToCart(product, currentItems));
+  }
 }
 
 async function updateCartItemQuantityAsync(productId, nextQuantity, currentItems = getCartItems()) {
@@ -279,13 +282,16 @@ async function removeCartItemAsync(productId, currentItems = getCartItems()) {
     return buildLocalCart(removeCartItem(productId, currentItems));
   }
 
-  const token = await ensureRemoteCartSession();
-  const response = await requestJson(`/cart/items/${productId}`, {
-    method: 'DELETE',
-    token,
-  });
-
-  return normalizeCartResponse(response);
+  try {
+    const token = await ensureRemoteCartSession();
+    const response = await requestJson(`/cart/items/${productId}`, {
+      method: 'DELETE',
+      token,
+    });
+    return normalizeCartResponse(response);
+  } catch {
+    return buildLocalCart(removeCartItem(productId, currentItems));
+  }
 }
 
 async function clearCartAsync() {

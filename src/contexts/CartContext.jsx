@@ -72,17 +72,13 @@ function CartProvider({ children }) {
         setCart(nextCart);
         setCartError('');
         setCartHydrationStatus('ready');
-      } catch (error) {
+      } catch {
         if (!isMounted) {
           return;
         }
 
-        setCartError(
-          error instanceof Error && error.message
-            ? error.message
-            : 'No fue posible sincronizar el carrito.'
-        );
-        setCartHydrationStatus('error');
+        setCart(cartService.getCart());
+        setCartHydrationStatus('ready');
       } finally {
         if (isMounted) {
           setIsSyncingCart(false);
