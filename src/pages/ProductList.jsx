@@ -11,6 +11,7 @@ function ProductList() {
   const { isAdmin } = useAuth();
   const { addToCart } = useCart();
   const [productsState, setProductsState] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [toast, setToast] = useState('');
@@ -23,6 +24,9 @@ function ProductList() {
 
   useEffect(() => {
     productService.getProductsAsync().then(setProductsState).catch(() => {});
+    productService.getCategoriesAsync()
+      .then((cats) => setCategories(Array.isArray(cats) ? cats.map((c) => ({ id: c.id, name: c.name })) : []))
+      .catch(() => {});
   }, []);
 
   const handleOpenCreate = () => {
@@ -36,33 +40,21 @@ function ProductList() {
   };
 
   const handleAddProduct = async (product) => {
-    const saved = await productService.createProductAsync(product);
-    setProductsState((prev) => {
-      const maxId = prev.reduce((acc, item) => Math.max(acc, item.id), 0);
-      const nextId = saved?.id ?? maxId + 1;
-
-      return [
-        ...prev,
-        {
-          ...product,
-          ...saved,
-          id: nextId,
-          likes: Number(product.likes) || 0,
-          isLiked: Boolean(product.isLiked),
-        },
-      ];
-    });
-
-    handleCloseForm();
+    try {
+      const nextProducts = await productService.createProductAsync(product, productsState);
+      setProductsState(nextProducts);
+      handleCloseForm();
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible crear el producto.';
+      return { ok: false, error: message };
+    }
   };
 
   const handleDeleteProduct = async (id) => {
-    await productService.deleteProductAsync(id);
-    setProductsState((prev) => prev.filter((product) => product.id !== id));
-
-    if (editingProduct?.id === id) {
-      handleCloseForm();
-    }
+    const nextProducts = await productService.deleteProductAsync(id, productsState);
+    setProductsState(nextProducts);
+    if (editingProduct?.id === id) handleCloseForm();
   };
 
   const handleEditStart = (product) => {
@@ -71,39 +63,15 @@ function ProductList() {
   };
 
   const handleEditSubmit = async (updatedProduct) => {
-    const saved = await productService.updateProductAsync(updatedProduct.id, updatedProduct);
-    setProductsState((prev) =>
-      prev.map((product) =>
-        product.id === updatedProduct.id
-          ? {
-              ...updatedProduct,
-              ...saved,
-              likes: Number(updatedProduct.likes ?? product.likes) || 0,
-              isLiked: Boolean(updatedProduct.isLiked ?? product.isLiked),
-            }
-          : product
-      )
-    );
-    handleCloseForm();
-  };
-
-  const handleToggleLike = (id) => {
-    setProductsState((prev) => {
-      return prev.map((product) => {
-        if (product.id !== id) {
-          return product;
-        }
-
-        const currentLikes = Number(product.likes) || 0;
-        const wasLiked = Boolean(product.isLiked);
-
-        return {
-          ...product,
-          isLiked: !wasLiked,
-          likes: wasLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
-        };
-      });
-    });
+    try {
+      const nextProducts = await productService.updateProductAsync(updatedProduct, productsState);
+      setProductsState(nextProducts);
+      handleCloseForm();
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No fue posible actualizar el producto.';
+      return { ok: false, error: message };
+    }
   };
 
   return (
@@ -119,6 +87,7 @@ function ProductList() {
       {isAdmin && isFormOpen ? (
         <ProductForm
           initialValues={editingProduct}
+          categories={categories}
           isEditing={Boolean(editingProduct)}
           onCancel={handleCloseForm}
           onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
@@ -139,17 +108,14 @@ function ProductList() {
                 key={product.id}
                 id={product.id}
                 name={product.name}
-                category={product.category}
+                category={product.categoryName ?? product.category}
                 price={product.price}
                 rating={product.rating}
-                stock={product.stock}
+                stock={product.stock ?? product.stockQty}
                 image={product.image}
                 description={product.description}
-                likes={product.likes}
-                isLiked={product.isLiked}
-                onToggleLike={() => handleToggleLike(product.id)}
                 onAddToCart={handleAddToCart}
-                disableAddToCart={product.stock === 0}
+                disableAddToCart={(product.stock ?? product.stockQty) === 0}
                 onDelete={isAdmin ? () => handleDeleteProduct(product.id) : undefined}
                 onEdit={isAdmin ? () => handleEditStart(product) : undefined}
               />

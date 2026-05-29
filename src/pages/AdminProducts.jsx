@@ -6,15 +6,18 @@ import ProductForm from '../components/ProductForm';
 import productService from '../services/productService';
 import styles from '../styles/AdminProducts.module.css';
 
+const ADMIN_FILTERS = Object.freeze({ activeOnly: false });
+
 function AdminProducts() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [submitError, setSubmitError] = useState('');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -25,40 +28,36 @@ function AdminProducts() {
       setLoadError('');
 
       try {
-        const [data, cats] = await Promise.all([
-          productService.getProductsAsync(),
+        const [prodsData, catsData] = await Promise.all([
+          productService.getProductsAsync(ADMIN_FILTERS),
           productService.getCategoriesAsync(),
         ]);
 
         if (!isMounted) return;
 
-        setProducts(data);
-        setCategories(cats);
+        setProducts(Array.isArray(prodsData) ? prodsData : []);
+        setCategories(
+          Array.isArray(catsData)
+            ? catsData.map((c) => ({ id: c.id, name: c.name }))
+            : []
+        );
       } catch (error) {
         if (!isMounted) return;
-
         setLoadError(
-          error instanceof Error ? error.message : 'No fue posible cargar los productos.'
+          error instanceof Error ? error.message : 'No fue posible cargar los datos.'
         );
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchData();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-
     if (!normalizedSearch) return products;
-
     return products.filter(
       (p) =>
         p.name.toLowerCase().includes(normalizedSearch) ||
@@ -68,77 +67,73 @@ function AdminProducts() {
   }, [products, search]);
 
   const handleOpenCreate = () => {
-    setEditingProduct(null);
     setSubmitError('');
+    setEditingProduct(null);
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
+    setSubmitError('');
     setEditingProduct(null);
     setIsFormOpen(false);
-    setSubmitError('');
   };
 
   const handleEditStart = (product) => {
-    setEditingProduct(product);
     setSubmitError('');
+    setEditingProduct(product);
     setIsFormOpen(true);
   };
 
   const handleAddProduct = async (productData) => {
+    setIsSaving(true);
+    setSubmitError('');
+
     try {
-      const newProduct = await productService.createProductAsync(productData);
-      setProducts((prev) => [...prev, newProduct]);
+      const nextProducts = await productService.createProductAsync(productData, products, ADMIN_FILTERS);
+      setProducts(nextProducts);
       handleCloseForm();
+      return { ok: true };
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'No fue posible crear el producto.'
-      );
+      const message =
+        error instanceof Error ? error.message : 'No fue posible crear el producto.';
+      setSubmitError(message);
+      return { ok: false, error: message };
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleEditSubmit = async (updatedProduct) => {
+    setIsSaving(true);
+    setSubmitError('');
+
     try {
-      const saved = await productService.updateProductAsync(updatedProduct.id, updatedProduct);
-      setProducts((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+      const nextProducts = await productService.updateProductAsync(updatedProduct, products, ADMIN_FILTERS);
+      setProducts(nextProducts);
       handleCloseForm();
+      return { ok: true };
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'No fue posible actualizar el producto.'
-      );
+      const message =
+        error instanceof Error ? error.message : 'No fue posible actualizar el producto.';
+      setSubmitError(message);
+      return { ok: false, error: message };
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteProduct = async (id) => {
+    setSubmitError('');
     try {
-      await productService.deleteProductAsync(id);
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-
-      if (editingProduct?.id === id) {
-        handleCloseForm();
-      }
+      const nextProducts = await productService.deleteProductAsync(id, products, ADMIN_FILTERS);
+      setProducts(nextProducts);
     } catch (error) {
-      setLoadError(
+      setSubmitError(
         error instanceof Error ? error.message : 'No fue posible eliminar el producto.'
       );
     }
-  };
 
-  const handleToggleLike = (id) => {
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-
-        const wasLiked = Boolean(p.isLiked);
-        const currentLikes = Number(p.likes) || 0;
-
-        return {
-          ...p,
-          isLiked: !wasLiked,
-          likes: wasLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
-        };
-      })
-    );
+    if (editingProduct?.id === id) handleCloseForm();
   };
 
   if (isLoading) {
@@ -168,25 +163,19 @@ function AdminProducts() {
           >
             Ver catálogo
           </button>
-          {!isFormOpen && (
-            <button type="button" className={styles.primaryButton} onClick={handleOpenCreate}>
-              Agregar producto
-            </button>
-          )}
         </div>
       </div>
 
       {isFormOpen ? (
-        <>
-          {submitError && <p className={styles.errorMessage}>{submitError}</p>}
-          <ProductForm
-            initialValues={editingProduct}
-            categories={categories}
-            isEditing={Boolean(editingProduct)}
-            onCancel={handleCloseForm}
-            onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
-          />
-        </>
+        <ProductForm
+          initialValues={editingProduct}
+          categories={categories}
+          isEditing={Boolean(editingProduct)}
+          isSubmitting={isSaving}
+          submitError={submitError}
+          onCancel={handleCloseForm}
+          onSubmit={editingProduct ? handleEditSubmit : handleAddProduct}
+        />
       ) : (
         <>
           <div className={styles.toolbar}>
@@ -196,7 +185,16 @@ function AdminProducts() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={handleOpenCreate}
+            >
+              Agregar producto
+            </button>
           </div>
+
+          {submitError && <p className={styles.errorMessage}>{submitError}</p>}
 
           {filteredProducts.length === 0 ? (
             <p className={styles.emptyText}>No hay productos que coincidan con la búsqueda.</p>
@@ -205,6 +203,7 @@ function AdminProducts() {
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
+                  id={product.id}
                   name={product.name}
                   category={product.categoryName ?? product.category}
                   price={product.price}
@@ -212,9 +211,6 @@ function AdminProducts() {
                   stock={product.stock ?? product.stockQty}
                   image={product.image}
                   description={product.description}
-                  likes={product.likes}
-                  isLiked={product.isLiked}
-                  onToggleLike={() => handleToggleLike(product.id)}
                   onDelete={() => handleDeleteProduct(product.id)}
                   onEdit={() => handleEditStart(product)}
                 />

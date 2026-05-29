@@ -1,242 +1,282 @@
 import { appConfig } from '../config';
 import { loadSessionToken } from '../utils/authStorage';
-import { loadProducts, saveProducts } from '../utils/productsStorage';
+import { PRODUCTS_DEFAULT_RATING, loadProducts, saveProducts } from '../utils/productsStorage';
 
+import categoryService from './categoryService';
 import { requestJson } from './http';
 
-const normalizeCategory = (product) => {
-  const categoryId = Number(product?.categoryId ?? product?.category?.id ?? 0);
-  const categoryName = String(
-    product?.categoryName ?? product?.category?.name ?? product?.category ?? 'Sin categoría'
-  ).trim();
+const REMOTE_STORAGE_OPTIONS = Object.freeze({ seedFallback: false });
 
-  return { categoryId, categoryName };
+const normalizeId = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const normalizeProduct = (product) => {
-  const { categoryId, categoryName } = normalizeCategory(product);
-  const stock =
-    Number.isFinite(Number(product?.stockQty ?? product?.stock)) &&
-    Number(product?.stockQty ?? product?.stock) >= 0
-      ? Number(product?.stockQty ?? product?.stock)
-      : 0;
-  const rating = Math.min(5, Math.max(1, Number(product?.rating) || 1));
+const toAsyncResult = (callback) => Promise.resolve().then(callback);
 
-  return {
-    id: Number(product?.id),
-    name: String(product?.name ?? 'Producto').trim(),
-    description: String(product?.description ?? '').trim(),
-    category: categoryName,
-    categoryId,
-    categoryName,
-    price: Number(product?.price) || 0,
-    rating,
-    stock,
-    stockQty: stock,
-    image: String(product?.image ?? '').trim(),
-    sku: String(product?.sku ?? '').trim(),
-    isActive: product?.isActive !== false,
-    likes: Number(product?.likes) || 0,
-    isLiked: Boolean(product?.isLiked),
-  };
-};
-
-const extractProducts = (response) => {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (Array.isArray(response?.data)) {
-    return response.data;
-  }
-
-  if (Array.isArray(response?.products)) {
-    return response.products;
-  }
-
+const extractCollection = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.content)) return payload.content;
+  if (Array.isArray(payload?.data)) return payload.data;
   return [];
 };
 
-const toUpsertBody = (product) => ({
-  categoryId: Number(product.categoryId) || null,
-  sku: String(product.sku ?? '').trim(),
-  name: String(product.name ?? '').trim(),
-  description: String(product.description ?? '').trim(),
-  image: String(product.image ?? '').trim() || null,
-  price: Number(product.price) || 0,
-  stockQty: Number(product.stockQty ?? product.stock) || 0,
-  isActive: product.isActive !== false,
-});
+const loadRemoteProducts = () => loadProducts(REMOTE_STORAGE_OPTIONS);
 
-const buildQueryString = (filters = {}) => {
-  const params = new URLSearchParams();
+const persistRemoteProductsCache = (products) => saveProducts(products, REMOTE_STORAGE_OPTIONS);
 
-  if (filters.search) {
-    params.set('search', filters.search);
-  }
+const normalizeProductInput = (product, currentProducts = []) => {
+  const normalizedId = normalizeId(product?.id);
+  const existingProduct = currentProducts.find((item) => item.id === normalizedId);
+  const categoryName =
+    String(
+      product?.categoryName ??
+        product?.category?.name ??
+        product?.category ??
+        existingProduct?.categoryName ??
+        ''
+    ).trim() || 'Sin categoría';
+  const categoryId =
+    normalizeId(product?.categoryId ?? product?.category?.id ?? existingProduct?.categoryId) ||
+    undefined;
+  const stockQty = Number(product?.stockQty ?? product?.stock ?? product?.productStock);
+  const normalizedStockQty = Number.isFinite(stockQty) && stockQty >= 0 ? Math.floor(stockQty) : 0;
+  const price = Number(product?.price ?? existingProduct?.price ?? 0) || 0;
+  const isActive = Boolean(product?.isActive ?? product?.active ?? existingProduct?.isActive ?? true);
+  const rating = Number(product?.rating ?? existingProduct?.rating ?? PRODUCTS_DEFAULT_RATING);
 
-  if (filters.categoryId) {
-    params.set('categoryId', String(filters.categoryId));
-  }
-
-  if (filters.categoryName) {
-    params.set('categoryName', filters.categoryName);
-  }
-
-  const query = params.toString();
-  return query ? `?${query}` : '';
+  return {
+    ...existingProduct,
+    ...product,
+    id: normalizedId,
+    categoryId,
+    categoryName,
+    category: categoryName,
+    sku: String(product?.sku ?? existingProduct?.sku ?? '').trim(),
+    price,
+    rating: Number.isFinite(rating) ? Math.min(5, Math.max(1, rating)) : PRODUCTS_DEFAULT_RATING,
+    stockQty: normalizedStockQty,
+    stock: normalizedStockQty,
+    isActive,
+    isAvailable: Boolean((product?.isAvailable ?? normalizedStockQty > 0) && isActive),
+    image: String(product?.image ?? product?.imageUrl ?? existingProduct?.image ?? '').trim(),
+    description: String(product?.description ?? existingProduct?.description ?? '').trim(),
+    createdAt: String(product?.createdAt ?? existingProduct?.createdAt ?? ''),
+    updatedAt: String(product?.updatedAt ?? existingProduct?.updatedAt ?? ''),
+  };
 };
 
-const applyLocalFilters = (products, filters = {}) => {
-  let filtered = products;
+const normalizeRemoteProductInput = (product) => {
+  const categoryName =
+    String(product?.categoryName ?? product?.category?.name ?? product?.category ?? '').trim() ||
+    'Sin categoría';
+  const categoryId = normalizeId(product?.categoryId ?? product?.category?.id) || undefined;
+  const stockQty = Number(product?.stockQty ?? product?.stock ?? product?.productStock);
+  const normalizedStockQty = Number.isFinite(stockQty) && stockQty >= 0 ? Math.floor(stockQty) : 0;
+  const price = Number(product?.price ?? 0) || 0;
+  const isActive = Boolean(product?.isActive ?? product?.active ?? true);
+  const rating = Number(product?.rating ?? PRODUCTS_DEFAULT_RATING);
 
-  if (filters.isActive !== undefined) {
-    filtered = filtered.filter((p) => p.isActive === filters.isActive);
+  return {
+    ...product,
+    id: normalizeId(product?.id),
+    categoryId,
+    categoryName,
+    category: categoryName,
+    sku: String(product?.sku ?? '').trim(),
+    price,
+    rating: Number.isFinite(rating) ? Math.min(5, Math.max(1, rating)) : PRODUCTS_DEFAULT_RATING,
+    stockQty: normalizedStockQty,
+    stock: normalizedStockQty,
+    isActive,
+    isAvailable: Boolean((product?.isAvailable ?? normalizedStockQty > 0) && isActive),
+    image: String(product?.image ?? product?.imageUrl ?? '').trim(),
+    description: String(product?.description ?? '').trim(),
+    createdAt: String(product?.createdAt ?? ''),
+    updatedAt: String(product?.updatedAt ?? ''),
+  };
+};
+
+const applyFilters = (products, filters = {}) => {
+  const normalizedSearch = String(filters?.search ?? '').trim().toLowerCase();
+  const normalizedCategoryId = normalizeId(filters?.categoryId);
+  const normalizedCategoryName = String(filters?.categoryName ?? '').trim().toLowerCase();
+  const activeOnly = Boolean(filters?.activeOnly);
+
+  return products.filter((product) => {
+    const productCategoryName = String(product.categoryName ?? product.category ?? '').trim();
+    const matchesSearch =
+      !normalizedSearch ||
+      [product.name, product.description, product.sku].some((field) =>
+        String(field ?? '').toLowerCase().includes(normalizedSearch)
+      );
+    const matchesCategoryId =
+      !normalizedCategoryId || normalizeId(product.categoryId) === normalizedCategoryId;
+    const matchesCategoryName =
+      !normalizedCategoryName || productCategoryName.toLowerCase() === normalizedCategoryName;
+    const matchesActive = !activeOnly || product.isActive !== false;
+
+    return matchesSearch && matchesCategoryId && matchesCategoryName && matchesActive;
+  });
+};
+
+const persistProducts = (products) => saveProducts(products);
+
+const persistRemoteProducts = (products) =>
+  persistRemoteProductsCache(products.map((product) => normalizeRemoteProductInput(product)));
+
+const buildQueryString = (filters = {}) => {
+  const searchParams = new URLSearchParams();
+  if (String(filters?.search ?? '').trim()) searchParams.set('search', String(filters.search).trim());
+  if (normalizeId(filters?.categoryId) > 0) searchParams.set('categoryId', String(normalizeId(filters.categoryId)));
+  if (typeof filters?.activeOnly === 'boolean') searchParams.set('activeOnly', String(filters.activeOnly));
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : '';
+};
+
+const resolveCategoryId = async (product) => {
+  const currentCategoryId = normalizeId(product?.categoryId);
+  if (currentCategoryId > 0) return currentCategoryId;
+
+  const categoryName = String(product?.categoryName ?? product?.category ?? '').trim();
+  if (!categoryName) return 0;
+
+  const categories = await categoryService.getCategoriesAsync();
+  const normalizedCategoryName = categoryName.toLowerCase();
+  const match = categories.find(
+    (category) =>
+      String(category.name ?? '').trim().toLowerCase() === normalizedCategoryName ||
+      String(category.slug ?? '').trim().toLowerCase() === normalizedCategoryName
+  );
+  return normalizeId(match?.id);
+};
+
+const buildRemoteAdminPayload = async (product) => {
+  const categoryId = await resolveCategoryId(product);
+
+  if (!categoryId) {
+    throw new Error('La categoría seleccionada no existe en el backend.');
   }
 
-  if (filters.categoryName) {
-    const normalizedCategory = String(filters.categoryName).trim().toLowerCase();
-    filtered = filtered.filter(
-      (p) => p.categoryName.toLowerCase() === normalizedCategory
-    );
-  }
-
-  if (filters.categoryId) {
-    filtered = filtered.filter((p) => p.categoryId === Number(filters.categoryId));
-  }
-
-  if (filters.search) {
-    const normalizedSearch = String(filters.search).trim().toLowerCase();
-    filtered = filtered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(normalizedSearch) ||
-        p.description.toLowerCase().includes(normalizedSearch) ||
-        p.sku.toLowerCase().includes(normalizedSearch)
-    );
-  }
-
-  return filtered;
+  return {
+    sku: String(product?.sku ?? '').trim(),
+    name: String(product?.name ?? '').trim(),
+    description: String(product?.description ?? '').trim(),
+    price: Number(product?.price) || 0,
+    stockQty: Math.max(0, Math.floor(Number(product?.stockQty ?? product?.stock) || 0)),
+    image: String(product?.image ?? '').trim() || null,
+    categoryId,
+    isActive: Boolean(product?.isActive ?? true),
+  };
 };
 
 function getProducts(filters = {}) {
-  const products = loadProducts().map(normalizeProduct);
-  return applyLocalFilters(products, filters);
+  return applyFilters(loadProducts(), filters);
 }
 
-function getProductById(id) {
-  const normalizedId = Number(id);
-  return loadProducts()
-    .map(normalizeProduct)
-    .find((p) => p.id === normalizedId) ?? null;
+function getProductById(productId) {
+  const normalizedId = normalizeId(productId);
+  return loadProducts().find((product) => product.id === normalizedId) ?? null;
 }
 
-function createProduct(productData) {
-  const products = loadProducts();
-  const maxId = products.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0);
-  const newProduct = normalizeProduct({ ...productData, id: maxId + 1 });
-  saveProducts([...products, newProduct]);
-  return newProduct;
+function createProduct(product, currentProducts = loadProducts()) {
+  const maxId = currentProducts.reduce(
+    (acc, item) => Math.max(acc, normalizeId(item.id) || 0),
+    0
+  );
+  return persistProducts([
+    ...currentProducts,
+    normalizeProductInput({ ...product, id: maxId + 1 }, currentProducts),
+  ]);
 }
 
-function updateProduct(productId, updates) {
-  const normalizedId = Number(productId);
-  let updatedProduct = null;
+function updateProduct(updatedProduct, currentProducts = loadProducts()) {
+  return persistProducts(
+    currentProducts.map((product) =>
+      product.id === updatedProduct.id
+        ? normalizeProductInput({ ...product, ...updatedProduct }, currentProducts)
+        : product
+    )
+  );
+}
 
-  const nextProducts = loadProducts().map((p) => {
-    if (Number(p.id) !== normalizedId) {
-      return p;
-    }
+function deleteProduct(productId, currentProducts = loadProducts()) {
+  const normalizedId = normalizeId(productId);
+  return persistProducts(currentProducts.filter((product) => product.id !== normalizedId));
+}
 
-    updatedProduct = normalizeProduct({ ...p, ...updates, id: p.id });
-    return updatedProduct;
+function getProductsAsync(filters = {}) {
+  if (!appConfig.useRemoteApi) {
+    return toAsyncResult(() => getProducts(filters));
+  }
+
+  return requestJson(`/products${buildQueryString(filters)}`, { method: 'GET' }).then(
+    (response) => applyFilters(persistRemoteProducts(extractCollection(response)), filters)
+  );
+}
+
+function getProductByIdAsync(productId) {
+  const normalizedId = normalizeId(productId);
+
+  if (!appConfig.useRemoteApi) {
+    return toAsyncResult(() => getProductById(normalizedId));
+  }
+
+  return requestJson(`/products/${normalizedId}`, { method: 'GET' }).then((response) => {
+    const normalizedProduct = normalizeRemoteProductInput(response);
+    const currentProducts = loadRemoteProducts();
+    const nextProducts = currentProducts.some((p) => p.id === normalizedProduct.id)
+      ? currentProducts.map((p) => (p.id === normalizedProduct.id ? normalizedProduct : p))
+      : [...currentProducts, normalizedProduct];
+    persistRemoteProductsCache(nextProducts);
+    return normalizedProduct;
   });
-
-  saveProducts(nextProducts);
-  return updatedProduct;
 }
 
-function deleteProduct(productId) {
-  const normalizedId = Number(productId);
-  const products = loadProducts();
-  saveProducts(products.filter((p) => Number(p.id) !== normalizedId));
-}
-
-async function getProductsAsync(filters = {}) {
+function createProductAsync(product, currentProducts = loadProducts(), refreshFilters = {}) {
   if (!appConfig.useRemoteApi) {
-    return getProducts(filters);
+    return toAsyncResult(() => createProduct(product, currentProducts));
   }
 
-  const query = buildQueryString(filters);
-  const response = await requestJson(`/products${query}`, { method: 'GET' });
-  const products = extractProducts(response).map(normalizeProduct);
-  saveProducts(products);
-  return applyLocalFilters(products, filters);
+  return buildRemoteAdminPayload(product).then((body) =>
+    requestJson('/admin/products', {
+      method: 'POST',
+      body,
+      token: loadSessionToken(),
+    }).then(() => getProductsAsync(refreshFilters))
+  );
 }
 
-async function getProductByIdAsync(id) {
-  const normalizedId = Number(id);
-
+function updateProductAsync(updatedProduct, currentProducts = loadProducts(), refreshFilters = {}) {
   if (!appConfig.useRemoteApi) {
-    return getProductById(normalizedId);
+    return toAsyncResult(() => updateProduct(updatedProduct, currentProducts));
   }
 
-  const response = await requestJson(`/products/${normalizedId}`, { method: 'GET' });
-  return normalizeProduct(response);
+  return buildRemoteAdminPayload(updatedProduct).then((body) =>
+    requestJson(`/admin/products/${normalizeId(updatedProduct?.id)}`, {
+      method: 'PUT',
+      body,
+      token: loadSessionToken(),
+    }).then(() => getProductsAsync(refreshFilters))
+  );
 }
 
-async function createProductAsync(productData) {
-  if (!appConfig.useRemoteApi) {
-    return createProduct(productData);
-  }
-
-  const token = loadSessionToken();
-  const response = await requestJson('/admin/products', {
-    method: 'POST',
-    body: toUpsertBody(productData),
-    token,
-  });
-
-  return normalizeProduct(response);
-}
-
-async function updateProductAsync(productId, updates) {
-  const normalizedId = Number(productId);
+function deleteProductAsync(productId, currentProducts = loadProducts(), refreshFilters = {}) {
+  const normalizedId = normalizeId(productId);
 
   if (!appConfig.useRemoteApi) {
-    return updateProduct(normalizedId, updates);
+    return toAsyncResult(() => deleteProduct(normalizedId, currentProducts));
   }
 
-  const token = loadSessionToken();
-  const response = await requestJson(`/admin/products/${normalizedId}`, {
-    method: 'PUT',
-    body: toUpsertBody(updates),
-    token,
-  });
-
-  return normalizeProduct(response);
-}
-
-async function deleteProductAsync(productId) {
-  const normalizedId = Number(productId);
-
-  if (!appConfig.useRemoteApi) {
-    return deleteProduct(normalizedId);
-  }
-
-  const token = loadSessionToken();
-  await requestJson(`/admin/products/${normalizedId}`, {
+  return requestJson(`/admin/products/${normalizedId}`, {
     method: 'DELETE',
-    token,
-  });
+    token: loadSessionToken(),
+  }).then(() => getProductsAsync(refreshFilters));
 }
 
-async function getCategoriesAsync() {
-  const response = await requestJson('/categories', { method: 'GET' });
-  const list = Array.isArray(response) ? response : [];
-  return list.map((cat) => ({
-    id: Number(cat.id ?? cat.categoryId),
-    name: String(cat.name ?? ''),
-  }));
+function getCategoriesAsync() {
+  return categoryService.getCategoriesAsync();
 }
 
 const productService = {
@@ -249,6 +289,7 @@ const productService = {
   getProductByIdAsync,
   getProducts,
   getProductsAsync,
+  persistProducts,
   updateProduct,
   updateProductAsync,
 };

@@ -1,76 +1,117 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import styles from "../styles/ProductForm.module.css";
+import styles from '../styles/ProductForm.module.css';
 
 const emptyValues = {
-  sku: "",
-  name: "",
-  categoryId: "",
-  price: "",
-  stock: "",
-  image: "",
-  description: "",
+  sku: '',
+  name: '',
+  categoryId: '',
+  price: '',
+  stock: '',
+  image: '',
+  description: '',
 };
 
-function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEditing = false }) {
+function ProductForm({
+  initialValues,
+  onSubmit,
+  onCancel,
+  categories = [],
+  isEditing = false,
+  isSubmitting = false,
+  submitError = '',
+}) {
   const [values, setValues] = useState(emptyValues);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (initialValues) {
       setValues({
-        sku: initialValues.sku ?? "",
-        name: initialValues.name ?? "",
-        categoryId: initialValues.categoryId ?? "",
-        price: initialValues.price ?? "",
-        stock: initialValues.stock ?? initialValues.stockQty ?? "",
-        image: initialValues.image ?? "",
-        description: initialValues.description ?? "",
+        sku: initialValues.sku ?? '',
+        name: initialValues.name ?? '',
+        categoryId: String(initialValues.categoryId ?? ''),
+        price: initialValues.price ?? '',
+        stock: initialValues.stockQty ?? initialValues.stock ?? '',
+        image: initialValues.image ?? '',
+        description: initialValues.description ?? '',
       });
     } else {
       setValues(emptyValues);
     }
+    setFormError('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialValues]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setValues((prev) => ({ ...prev, [name]: value }));
+    if (formError) setFormError('');
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const sku = values.sku.trim();
     const name = values.name.trim();
-    const categoryId = Number(values.categoryId);
     const image = values.image.trim();
     const description = values.description.trim();
+    const categoryId = Number(values.categoryId);
+    const selectedCategory = categories.find((cat) => cat.id === categoryId) ?? null;
     const price = Number(values.price);
     const stock = Number(values.stock);
-
-    if (!sku) return;
-    if (!name) return;
-    if (!categoryId) return;
-    if (!Number.isFinite(price) || price <= 0) return;
-    if (!Number.isFinite(stock) || stock < 0) return;
 
     const parsedRating = Number(initialValues?.rating ?? 3);
     const rating = Number.isFinite(parsedRating) ? Math.min(5, Math.max(1, parsedRating)) : 3;
 
-    onSubmit({
+    if (!sku) {
+      setFormError('El SKU es obligatorio.');
+      return;
+    }
+
+    if (!name) {
+      setFormError('El nombre es obligatorio.');
+      return;
+    }
+
+    if (!selectedCategory) {
+      setFormError('Selecciona una categoría válida.');
+      return;
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      setFormError('Ingresa un precio válido mayor a 0.');
+      return;
+    }
+
+    if (!Number.isFinite(stock) || stock < 0) {
+      setFormError('Ingresa un stock válido igual o mayor a 0.');
+      return;
+    }
+
+    setFormError('');
+
+    const result = await onSubmit({
       ...initialValues,
       sku,
       name,
       categoryId,
+      categoryName: selectedCategory.name,
+      category: selectedCategory.name,
       price,
-      stock,
       stockQty: stock,
+      stock,
       image,
       description,
       rating,
+      isActive: initialValues?.isActive ?? true,
     });
 
-    if (!isEditing) {
+    if (!isEditing && result?.ok !== false) {
       setValues(emptyValues);
+    }
+
+    if (result?.ok === false) {
+      setFormError(result?.error ?? 'No fue posible guardar el producto.');
     }
   };
 
@@ -78,11 +119,9 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
     <section className={styles.container}>
       <header className={styles.header}>
         <h2 className={styles.title}>
-          {isEditing ? "Editar producto" : "Agregar producto"}
+          {isEditing ? 'Editar producto' : 'Agregar producto'}
         </h2>
-        <p className={styles.subtitle}>
-          Completa el formulario y guarda los cambios.
-        </p>
+        <p className={styles.subtitle}>Completa el formulario y guarda los cambios.</p>
       </header>
 
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -91,11 +130,11 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
             <span className={styles.label}>SKU</span>
             <input
               className={styles.input}
+              disabled={isSubmitting}
               name="sku"
               value={values.sku}
               onChange={handleChange}
               placeholder="Ej: TECH-KEY-001"
-              required
             />
           </label>
 
@@ -103,14 +142,16 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
             <span className={styles.label}>Categoría</span>
             <select
               className={styles.input}
+              disabled={isSubmitting || categories.length === 0}
               name="categoryId"
               value={values.categoryId}
               onChange={handleChange}
-              required
             >
-              <option value="">Selecciona una categoría</option>
+              <option value="">
+                {categories.length === 0 ? 'Cargando categorías...' : 'Selecciona una categoría'}
+              </option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
+                <option key={cat.id} value={String(cat.id)}>
                   {cat.name}
                 </option>
               ))}
@@ -122,11 +163,11 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
           <span className={styles.label}>Nombre</span>
           <input
             className={styles.input}
+            disabled={isSubmitting}
             name="name"
             value={values.name}
             onChange={handleChange}
             placeholder="Ej: Teclado gamer"
-            required
           />
         </label>
 
@@ -135,13 +176,13 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
             <span className={styles.label}>Precio</span>
             <input
               className={styles.input}
+              disabled={isSubmitting}
               name="price"
               type="number"
               min="1"
               value={values.price}
               onChange={handleChange}
               placeholder="Ej: 199990"
-              required
             />
           </label>
 
@@ -149,25 +190,26 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
             <span className={styles.label}>Stock</span>
             <input
               className={styles.input}
+              disabled={isSubmitting}
               name="stock"
               type="number"
               min="0"
               value={values.stock}
               onChange={handleChange}
               placeholder="Ej: 10"
-              required
             />
           </label>
         </div>
 
         <label className={styles.field}>
-          <span className={styles.label}>Imagen (URL)</span>
+          <span className={styles.label}>Imagen (URL opcional)</span>
           <input
             className={styles.input}
+            disabled={isSubmitting}
             name="image"
             value={values.image}
             onChange={handleChange}
-            placeholder="https://..."
+            placeholder="https://... (opcional)"
           />
         </label>
 
@@ -175,6 +217,7 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
           <span className={styles.label}>Descripción</span>
           <textarea
             className={styles.textarea}
+            disabled={isSubmitting}
             name="description"
             value={values.description}
             onChange={handleChange}
@@ -183,19 +226,26 @@ function ProductForm({ initialValues, categories = [], onSubmit, onCancel, isEdi
           />
         </label>
 
+        {formError || submitError ? (
+          <p className={styles.error}>{formError || submitError}</p>
+        ) : null}
+
         <div className={styles.actions}>
           {onCancel ? (
             <button
               className={styles.btnSecondary}
               type="button"
               onClick={onCancel}
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
           ) : null}
 
-          <button className={styles.btnPrimary} type="submit">
-            {isEditing ? "Guardar cambios" : "Agregar producto"}
+          <button className={styles.btnPrimary} type="submit" disabled={isSubmitting}>
+            {isSubmitting
+              ? isEditing ? 'Guardando...' : 'Agregando...'
+              : isEditing ? 'Guardar cambios' : 'Agregar producto'}
           </button>
         </div>
       </form>
